@@ -1,0 +1,32 @@
+# 3. Scale Up Web Infrastructure
+
+## Overview
+This document describes a scaled-up, highly available web infrastructure for `www.foobar.com`. This design separates individual components onto dedicated servers and eliminates the Load Balancer Single Point of Failure (SPOF) by introducing a clustered, redundant load balancer setup.
+
+---
+
+## Infrastructure Architecture Components & Additions
+
+* **Additional Server (Dedicated Database/Services Server):**
+  * **Why added:** By adding a fourth server, we completely decouple the database from the application and web servers. This allows us to dedicate maximum hardware resources (RAM, CPU, I/O performance) strictly to database operations.
+
+* **Second Load Balancer (HAProxy Cluster):**
+  * **Why added:** A single load balancer is a critical Single Point of Failure. Adding a second load balancer configured in a high-availability cluster (typically using tools like Keepalived with a Virtual IP) ensures that if the active load balancer fails, the passive/backup load balancer instantly takes over without service disruption.
+
+* **Component Separation (Web Server, App Server, Database):**
+  * **Why added:** Isolating the web server (Nginx), application server, and database onto their own dedicated servers prevents resource contention. Heavy database queries no longer starve the web application of CPU and memory, and each tier can be independently scaled horizontally based on its specific traffic load.
+
+---
+
+## Specifics & Core Concepts
+
+* **Application Server vs Web Server:**
+  * **Web Server:** Handles incoming HTTP requests from clients, serves static content (HTML, CSS, images, JavaScript) directly, and acts as a reverse proxy to forward dynamic requests.
+  * **Application Server:** Executes the core application business logic, processes user code/scripts, and interacts directly with the database to generate dynamic content.
+
+---
+
+## Infrastructure Benefits
+* **No Load Balancer SPOF:** HAProxy clustering ensures high availability for incoming traffic routing.
+* **Optimized Resource Allocation:** Dedicated servers for database, application, and web processing maximize efficiency.
+* **Improved Maintainability & Scalability:** Individual tiers can be scaled independently as traffic grows.
