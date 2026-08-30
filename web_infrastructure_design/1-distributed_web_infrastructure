@@ -1,0 +1,43 @@
+# 1. Distributed Web Infrastructure
+
+## Overview
+This document outlines a distributed, three-server web infrastructure designed to scale the website `www.foobar.com` for higher availability and traffic handling compared to a single-server setup.
+
+---
+
+## Infrastructure Architecture Components & Additions
+
+* **Load Balancer (HAProxy):**
+  * **Why added:** Added in front of the application servers to distribute incoming web traffic evenly across multiple backend servers, preventing any single server from becoming overwhelmed.
+  * **Algorithm:** Configured with the **Round Robin** (or Least Connections) algorithm, which sequentially routes each new connection request to the next server in line.
+
+* **Server 1 & Server 2 (Web & App Servers + Database):**
+  * **Why added:** Scaling out horizontally. Each server runs Nginx (web server), an application server, the codebase, and a MySQL database instance.
+
+* **MySQL Database Primary-Replica Cluster:**
+  * **Why added:** To separate read and write operations, improve performance, and provide data redundancy.
+  * **How it works:** The Primary (Master) handles write and update operations and replicates the data changes to the Replica (Slave). The Replicas handle read queries.
+  * **Primary vs Replica role:** The Primary node accepts all data modifications (INSERT, UPDATE, DELETE), while Replica nodes are typically configured for read-only operations (`SELECT`).
+
+---
+
+## Specifics & Core Concepts
+
+* **Active-Active vs Active-Passive Load Balancer Setup:**
+  * **Active-Active:** Both load balancers (or servers) are running simultaneously and actively processing incoming traffic. If one fails, the other absorbs the full load.
+  * **Active-Passive:** One load balancer is actively handling traffic while the secondary (passive) node monitors the primary. If the primary fails, the passive node takes over (failover). Our current setup with a single HAproxy is vulnerable, so adding a redundant HAproxy would establish an Active-Passive setup.
+
+---
+
+## Infrastructure Issues & Limitations
+
+* **Single Points of Failure (SPOF):**
+  * The Load Balancer itself is a SPOF (if HAproxy goes down, no traffic reaches the servers).
+  * The Primary database is a SPOF for write operations.
+
+* **Security Issues:**
+  * **No Firewall:** No packet filtering or security groups configured to block unauthorized ports.
+  * **No HTTPS:** Traffic between users and the load balancer is unencrypted (HTTP), exposing sensitive data to interception.
+
+* **No Monitoring:**
+  * Absence of monitoring tools (like Prometheus, Grafana, or Datadog) means system administrators cannot track server health, CPU usage, memory leaks, or error rates in real-time.
